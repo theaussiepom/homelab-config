@@ -45,7 +45,7 @@ services:
       DB01_FILESYSTEM_PATH: /backup/bitwarden_vault
       DB01_HOST: mariadb
       DB01_NAME: bitwarden_vault
-      DB01_PASS: ${BACKUP_MARIADB}
+      DB01_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
       DB01_TYPE: mariadb
       DB01_USER: backup
       DB02_BACKUP_BEGIN: 5 * * * *
@@ -54,11 +54,11 @@ services:
       DB02_COMPRESSION_LEVEL: "9"
       DB02_HOST: mariadb
       DB02_NAME: bitwarden_vault
-      DB02_PASS: ${BACKUP_MARIADB}
-      DB02_S3_BUCKET: ${S3_BUCKET_NAME}
-      DB02_S3_HOST: ${S3_HOST}
-      DB02_S3_KEY_ID: ${S3_KEY_ID}
-      DB02_S3_KEY_SECRET: ${S3_KEY_SECRET}
+      DB02_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
+      DB02_S3_BUCKET: ${S3_BUCKET_NAME:?Supply private Compose interpolation value}
+      DB02_S3_HOST: ${S3_HOST:?Supply private Compose interpolation value}
+      DB02_S3_KEY_ID: ${S3_KEY_ID:?Supply private Compose interpolation value}
+      DB02_S3_KEY_SECRET: ${S3_KEY_SECRET:?Supply private Compose interpolation value}
       DB02_TYPE: mariadb
       DB02_USER: backup
       DB03_BACKUP_BEGIN: 10 0,6,12,18 * * *
@@ -66,7 +66,7 @@ services:
       DB03_FILESYSTEM_PATH: /backup/homeassistant/mariadb
       DB03_HOST: mariadb
       DB03_NAME: homeassistant
-      DB03_PASS: ${BACKUP_MARIADB}
+      DB03_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
       DB03_TYPE: mariadb
       DB03_USER: backup
       DB04_BACKUP_BEGIN: 20 0 * * *
@@ -75,11 +75,11 @@ services:
       DB04_COMPRESSION_LEVEL: "9"
       DB04_HOST: mariadb
       DB04_NAME: homeassistant
-      DB04_PASS: ${BACKUP_MARIADB}
-      DB04_S3_BUCKET: ${S3_BUCKET_NAME}
-      DB04_S3_HOST: ${S3_HOST}
-      DB04_S3_KEY_ID: ${S3_KEY_ID}
-      DB04_S3_KEY_SECRET: ${S3_KEY_SECRET}
+      DB04_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
+      DB04_S3_BUCKET: ${S3_BUCKET_NAME:?Supply private Compose interpolation value}
+      DB04_S3_HOST: ${S3_HOST:?Supply private Compose interpolation value}
+      DB04_S3_KEY_ID: ${S3_KEY_ID:?Supply private Compose interpolation value}
+      DB04_S3_KEY_SECRET: ${S3_KEY_SECRET:?Supply private Compose interpolation value}
       DB04_TYPE: mariadb
       DB04_USER: backup
       DB05_BACKUP_BEGIN: 30 0,6,12,18 * * *
@@ -87,22 +87,22 @@ services:
       DB05_FILESYSTEM_PATH: /backup/homeassistant/influxdb
       DB05_HOST: http://influxdb
       DB05_NAME: ALL
-      DB05_PASS: ${BACKUP_INFLUXDB_PASS}
+      DB05_PASS: ${BACKUP_INFLUXDB_PASS:?Supply private Compose interpolation value}
       DB05_TYPE: influxdb
-      DB05_USER: ${BACKUP_INFLUXDB_USER}
+      DB05_USER: ${BACKUP_INFLUXDB_USER:?Supply private Compose interpolation value}
       DB06_BACKUP_BEGIN: 45 0 * * *
       DB06_BACKUP_LOCATION: S3
       DB06_CLEANUP_TIME: "4320"
       DB06_COMPRESSION_LEVEL: "9"
       DB06_HOST: http://influxdb
       DB06_NAME: ALL
-      DB06_PASS: ${BACKUP_INFLUXDB_PASS}
-      DB06_S3_BUCKET: ${S3_BUCKET_NAME}
-      DB06_S3_HOST: ${S3_HOST}
-      DB06_S3_KEY_ID: ${S3_KEY_ID}
-      DB06_S3_KEY_SECRET: ${S3_KEY_SECRET}
+      DB06_PASS: ${BACKUP_INFLUXDB_PASS:?Supply private Compose interpolation value}
+      DB06_S3_BUCKET: ${S3_BUCKET_NAME:?Supply private Compose interpolation value}
+      DB06_S3_HOST: ${S3_HOST:?Supply private Compose interpolation value}
+      DB06_S3_KEY_ID: ${S3_KEY_ID:?Supply private Compose interpolation value}
+      DB06_S3_KEY_SECRET: ${S3_KEY_SECRET:?Supply private Compose interpolation value}
       DB06_TYPE: influxdb
-      DB06_USER: ${BACKUP_INFLUXDB_USER}
+      DB06_USER: ${BACKUP_INFLUXDB_USER:?Supply private Compose interpolation value}
       DB07_AUTH: postgres
       DB07_BACKUP_BEGIN: 15 2,8,14,20 * * *
       DB07_BACKUP_GLOBALS: "false"

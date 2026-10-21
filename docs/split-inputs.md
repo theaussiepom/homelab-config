@@ -21,3 +21,14 @@ volume subpaths, container targets, mount flags, IDs and networks are retained.
 These are source-only integration changes. No directory, data, service or live mount
 has moved. Actual installation still needs immutable release pins and the existing
 deployment/admission review. WiNet runtime/build settings are unchanged.
+
+Database backup credentials and S3 settings used in `${...}` expressions must
+also be provided to Compose interpolation, via its private project `.env`,
+`--env-file`, or the invoking environment. A service's `env_file` supplies the
+container environment after interpolation and cannot populate those expressions.
+The public template now rejects missing or empty backup and S3 interpolation
+values, rather than overriding private runtime values with empty strings. Never
+copy populated environment files into this repository.
+
+Pi-hole also rejects an empty private API password. An intentionally unauthenticated
+installation is not a default supported by this public configuration.

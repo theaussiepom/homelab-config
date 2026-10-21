@@ -134,7 +134,7 @@ services:
     environment:
       TZ: ${TZ}
       WEB_PORT: 80
-      FTLCONF_webserver_api_password: ${MIGRATION_FTLCONF_WEBSERVER_API_PASSWORD?supply existing private value}
+      FTLCONF_webserver_api_password: ${MIGRATION_FTLCONF_WEBSERVER_API_PASSWORD:?supply existing private value}
       FTLCONF_files_database: /ftl-db/pihole-FTL.db
       FTLCONF_database_maxDBdays: 14
       DNSMASQ_USER: root
