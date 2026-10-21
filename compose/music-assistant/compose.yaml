@@ -1,0 +1,57 @@
+volumes:
+  docker:
+    name: docker
+    external: true
+services:
+  music-assistant-server:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:fa233a84f9f2d223faff9868b3a36a21e4914cd20a4170eced51c68fdb2d229c
+    container_name: mass
+    hostname: mass
+    labels:
+      traefik.enable: true
+      traefik.http.routers.mass.tls: true
+      traefik.http.routers.mass.tls.certresolver: cloudflare
+      traefik.http.routers.mass.entrypoints: https
+      traefik.http.routers.mass.rule: (Host(`music.${DOMAIN}`) || Host(`music.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.mass.middlewares: local@file
+      traefik.http.routers.mass-tablets.tls: true
+      traefik.http.routers.mass-tablets.tls.certresolver: cloudflare
+      traefik.http.routers.mass-tablets.entrypoints: https
+      traefik.http.routers.mass-tablets.rule: (Host(`music.${DOMAIN}`) || Host(`music.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`)) && (${HASS_TABLETS})
+      traefik.http.services.mass.loadbalancer.server.port: 8095
+    restart: unless-stopped
+    volumes:
+    - type: volume
+      source: docker
+      target: /data
+      read_only: false
+      volume:
+        subpath: homelab-data/services/music-assistant/data
+    cap_add:
+    - SYS_ADMIN
+    - DAC_READ_SEARCH
+    security_opt:
+    - apparmor:unconfined
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: info
+    dns:
+    - "${HOMELAB_MUSIC_ASSISTANT_MUSIC_ASSISTANT_SERVER_DNS_1:?Set HOMELAB_MUSIC_ASSISTANT_MUSIC_ASSISTANT_SERVER_DNS_1 in the private project env file}"
+    - "${HOMELAB_MUSIC_ASSISTANT_MUSIC_ASSISTANT_SERVER_DNS_2:?Set HOMELAB_MUSIC_ASSISTANT_MUSIC_ASSISTANT_SERVER_DNS_2 in the private project env file}"
+    networks:
+      underground:
+        ipv4_address: "${HOMELAB_MUSIC_ASSISTANT_MUSIC_ASSISTANT_SERVER_IPV4_ADDRESS_1:?Set HOMELAB_MUSIC_ASSISTANT_MUSIC_ASSISTANT_SERVER_IPV4_ADDRESS_1 in the private project env file}"
+      macvlan_100:
+        ipv4_address: ${HOME_NETWORK_PREFIX}.241
+    pull_policy: never
+networks:
+  underground:
+    external: true
+  macvlan_100:
+    external: true
+name: music-assistant

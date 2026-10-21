@@ -1,0 +1,517 @@
+name: database
+networks:
+  db_authentik:
+    external: true
+    name: db_authentik
+  db_bitwarden:
+    external: true
+    name: db_bitwarden
+  db_couchdb:
+    external: true
+    name: db_couchdb
+  db_hass:
+    external: true
+    name: db_hass
+  db_influxdb:
+    external: true
+    name: db_influxdb
+  db_mariadb:
+    external: true
+    name: db_mariadb
+  db_postgresql:
+    external: true
+    name: db_postgresql
+  db_zabbix:
+    external: true
+    name: db_zabbix
+  macvlan_100:
+    external: true
+    name: macvlan_100
+  underground:
+    external: true
+    name: underground
+services:
+  db_backup:
+    dns:
+      - "${HOMELAB_DATABASE_DB_BACKUP_DNS_1:?Set HOMELAB_DATABASE_DB_BACKUP_DNS_1 in the private project env file}"
+      - "${HOMELAB_DATABASE_DB_BACKUP_DNS_2:?Set HOMELAB_DATABASE_DB_BACKUP_DNS_2 in the private project env file}"
+    env_file:
+      - path: /mnt/nas/docker/.homelab-private/benbeast/database.db_backup.env
+        required: true
+    environment:
+      CONTAINER_ENABLE_MONITORING: "false"
+      DB01_BACKUP_BEGIN: 0 * * * *
+      DB01_CLEANUP_TIME: "10080"
+      DB01_FILESYSTEM_PATH: /backup/bitwarden_vault
+      DB01_HOST: mariadb
+      DB01_NAME: bitwarden_vault
+      DB01_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
+      DB01_TYPE: mariadb
+      DB01_USER: backup
+      DB02_BACKUP_BEGIN: 5 * * * *
+      DB02_BACKUP_LOCATION: S3
+      DB02_CLEANUP_TIME: "4320"
+      DB02_COMPRESSION_LEVEL: "9"
+      DB02_HOST: mariadb
+      DB02_NAME: bitwarden_vault
+      DB02_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
+      DB02_S3_BUCKET: ${S3_BUCKET_NAME:?Supply private Compose interpolation value}
+      DB02_S3_HOST: ${S3_HOST:?Supply private Compose interpolation value}
+      DB02_S3_KEY_ID: ${S3_KEY_ID:?Supply private Compose interpolation value}
+      DB02_S3_KEY_SECRET: ${S3_KEY_SECRET:?Supply private Compose interpolation value}
+      DB02_TYPE: mariadb
+      DB02_USER: backup
+      DB03_BACKUP_BEGIN: 10 0,6,12,18 * * *
+      DB03_CLEANUP_TIME: "10080"
+      DB03_FILESYSTEM_PATH: /backup/homeassistant/mariadb
+      DB03_HOST: mariadb
+      DB03_NAME: homeassistant
+      DB03_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
+      DB03_TYPE: mariadb
+      DB03_USER: backup
+      DB04_BACKUP_BEGIN: 20 0 * * *
+      DB04_BACKUP_LOCATION: S3
+      DB04_CLEANUP_TIME: "10080"
+      DB04_COMPRESSION_LEVEL: "9"
+      DB04_HOST: mariadb
+      DB04_NAME: homeassistant
+      DB04_PASS: ${BACKUP_MARIADB:?Supply private Compose interpolation value}
+      DB04_S3_BUCKET: ${S3_BUCKET_NAME:?Supply private Compose interpolation value}
+      DB04_S3_HOST: ${S3_HOST:?Supply private Compose interpolation value}
+      DB04_S3_KEY_ID: ${S3_KEY_ID:?Supply private Compose interpolation value}
+      DB04_S3_KEY_SECRET: ${S3_KEY_SECRET:?Supply private Compose interpolation value}
+      DB04_TYPE: mariadb
+      DB04_USER: backup
+      DB05_BACKUP_BEGIN: 30 0,6,12,18 * * *
+      DB05_CLEANUP_TIME: "4320"
+      DB05_FILESYSTEM_PATH: /backup/homeassistant/influxdb
+      DB05_HOST: http://influxdb
+      DB05_NAME: ALL
+      DB05_PASS: ${BACKUP_INFLUXDB_PASS:?Supply private Compose interpolation value}
+      DB05_TYPE: influxdb
+      DB05_USER: ${BACKUP_INFLUXDB_USER:?Supply private Compose interpolation value}
+      DB06_BACKUP_BEGIN: 45 0 * * *
+      DB06_BACKUP_LOCATION: S3
+      DB06_CLEANUP_TIME: "4320"
+      DB06_COMPRESSION_LEVEL: "9"
+      DB06_HOST: http://influxdb
+      DB06_NAME: ALL
+      DB06_PASS: ${BACKUP_INFLUXDB_PASS:?Supply private Compose interpolation value}
+      DB06_S3_BUCKET: ${S3_BUCKET_NAME:?Supply private Compose interpolation value}
+      DB06_S3_HOST: ${S3_HOST:?Supply private Compose interpolation value}
+      DB06_S3_KEY_ID: ${S3_KEY_ID:?Supply private Compose interpolation value}
+      DB06_S3_KEY_SECRET: ${S3_KEY_SECRET:?Supply private Compose interpolation value}
+      DB06_TYPE: influxdb
+      DB06_USER: ${BACKUP_INFLUXDB_USER:?Supply private Compose interpolation value}
+      DB07_AUTH: postgres
+      DB07_BACKUP_BEGIN: 15 2,8,14,20 * * *
+      DB07_BACKUP_GLOBALS: "false"
+      DB07_BACKUP_LOCATION: FILESYSTEM
+      DB07_CLEANUP_TIME: "10080"
+      DB07_COMPRESSION: ZSTD
+      DB07_COMPRESSION_LEVEL: "3"
+      DB07_EXTRA_BACKUP_OPTS: --clean --if-exists
+      DB07_FILESYSTEM_PATH: /backup/postgresql
+      DB07_HOST: postgresql
+      DB07_NAME: ALL
+      DB07_PORT: "5432"
+      DB07_SPLIT_DB: "false"
+      DB07_TYPE: pgsql
+      DB07_USER: homelab_backup
+      DB08_AUTH: postgres
+      DB08_BACKUP_BEGIN: 15 3 * * *
+      DB08_BACKUP_GLOBALS: "false"
+      DB08_BACKUP_LOCATION: S3
+      DB08_CLEANUP_TIME: "10080"
+      DB08_COMPRESSION: ZSTD
+      DB08_COMPRESSION_LEVEL: "3"
+      DB08_EXTRA_BACKUP_OPTS: --clean --if-exists
+      DB08_FILESYSTEM_PATH: /backup/postgresql
+      DB08_HOST: postgresql
+      DB08_NAME: ALL
+      DB08_PORT: "5432"
+      DB08_S3_PROTOCOL: https
+      DB08_SPLIT_DB: "false"
+      DB08_TYPE: pgsql
+      DB08_USER: homelab_backup
+      DB09_BACKUP_BEGIN: 40 2 * * *
+      DB09_BACKUP_LOCATION: FILESYSTEM
+      DB09_CLEANUP_TIME: "10080"
+      DB09_EXTRA_BACKUP_OPTS: --flush-privileges
+      DB09_FILESYSTEM_PATH: /backup/mariadb-recovery
+      DB09_HOST: mariadb
+      DB09_NAME: mysql,phpmyadmin
+      DB09_POST_SCRIPT: /assets/database-recovery/post-nas.sh
+      DB09_POST_SCRIPT_X_VERIFY: "false"
+      DB09_SPLIT_DB: "true"
+      DB09_TYPE: mariadb
+      DB09_USER: backup
+      DB10_BACKUP_BEGIN: 40 3 * * *
+      DB10_BACKUP_LOCATION: S3
+      DB10_CLEANUP_TIME: "10080"
+      DB10_EXTRA_BACKUP_OPTS: --flush-privileges
+      DB10_FILESYSTEM_PATH: /backup/mariadb-recovery
+      DB10_HOST: mariadb
+      DB10_NAME: mysql,phpmyadmin
+      DB10_POST_SCRIPT: /assets/database-recovery/post-s3.sh
+      DB10_POST_SCRIPT_X_VERIFY: "false"
+      DB10_S3_PROTOCOL: https
+      DB10_SPLIT_DB: "true"
+      DB10_TYPE: mariadb
+      DB10_USER: backup
+      DEFAULT_CREATE_LATEST_SYMLINK: "false"
+      DEFAULT_INFLUX_VERSION: "2"
+      DEFAULT_RESOURCE_OPTIMIZED: "true"
+      DEFAULT_S3_CERT_SKIP_VERIFY: "false"
+      LOG_PATH: /backup/backup-logs
+      TZ: ${TZ}
+    image: local/db-backup-pg16:20261007-r2
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: 10m
+    networks:
+      db_couchdb: null
+      db_influxdb: null
+      db_mariadb: null
+      db_postgresql: null
+      underground:
+        ipv4_address: "${HOMELAB_DATABASE_DB_BACKUP_IPV4_ADDRESS_1:?Set HOMELAB_DATABASE_DB_BACKUP_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+    restart: always
+    volumes:
+      - read_only: false
+        source: docker
+        target: /backup
+        type: volume
+        volume:
+          subpath: homelab-data/backups/databases
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /home/ben/.local/state/homelab-logging/caps-20261004T071308Z-influxdb/runtime-override.yaml
+        target: /recovery-source/deployment/source-00
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /home/ben/.local/state/homelab-logging/caps-20261004T071640Z-postgresql/runtime-override.yaml
+        target: /recovery-source/deployment/source-01
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /home/ben/.local/state/homelab-logging/caps-20261004T072011Z-mariadb/runtime-override.yaml
+        target: /recovery-source/deployment/source-02
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /home/ben/.local/state/homelab-logging/preserved-caps-20261004T091116748567Z-database-db_backup-1/image-override.yaml
+        target: /recovery-source/deployment/source-03
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: ${HOMELAB_DATABASE_COMPOSE_FILE:?required}
+        target: /recovery-source/deployment/source-04
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: ${HOMELAB_IMPLEMENTATION_ROOT:?required}/services/database-backup
+        target: /recovery-source/backup/image-build-source
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/docker/volumes/docker/_data/homelab-data/services/mariadb/config
+        target: /recovery-source/mariadb/conf.d
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: ${HOMELAB_CONFIG_ROOT:?required}/mariadb/config/my.cnf
+        target: /recovery-source/mariadb/active-my.cnf
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/docker/volumes/docker/_data/homelab-data/services/influxdb/config
+        target: /recovery-source/influxdb/config
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/databases/postgresql/postgresql.conf
+        target: /recovery-source/postgresql/postgresql.conf
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/databases/postgresql/postgresql.auto.conf
+        target: /recovery-source/postgresql/postgresql.auto.conf
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/databases/postgresql/pg_hba.conf
+        target: /recovery-source/postgresql/pg_hba.conf
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/databases/postgresql/pg_ident.conf
+        target: /recovery-source/postgresql/pg_ident.conf
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: ${HOMELAB_RECOVERY_MANIFEST_FILE:?required}
+        target: /recovery-source/manifest.json
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: ${HOMELAB_AUTOMATION_COMPOSE_FILE:?required}
+        target: /recovery-source/deployment/automation-compose
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: ${HOMELAB_STORAGE_RECOVERY_FILE:?required}
+        target: /recovery-source/host-storage/instructions
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /usr/local/sbin/databases-storage-check
+        target: /recovery-source/host-storage/storage-check
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /etc/systemd/system/docker.service.d/30-databases-storage.conf
+        target: /recovery-source/host-storage/docker-dropin
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /var/lib/databases/.volume-identity
+        target: /recovery-source/host-storage/volume-identity
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /mnt/nas/docker/.homelab-private/benbeast/database.env
+        target: /recovery-source/deployment/canonical-database-env
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /mnt/nas/docker/.homelab-private/benbeast/database.db_backup.env
+        target: /recovery-source/deployment/canonical-database-backup-env
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: true
+        source: /mnt/nas/docker/.homelab-private/benbeast/automation.env
+        target: /recovery-source/deployment/canonical-automation-env
+        type: bind
+  influxdb:
+    container_name: influxdb
+    environment:
+      TZ: ${TZ}
+    hostname: influxdb
+    image: sha256:c729c6b61bf04bccae282b4a88b0af07233b54566c44357100bb3f1f93d5bb09
+    labels:
+      traefik.enable: true
+      traefik.http.routers.influxdb.entrypoints: https
+      traefik.http.routers.influxdb.middlewares: local@file,authentik@file,securityHeadersUnsafeEval@file
+      traefik.http.routers.influxdb.rule: (Host(`influx.${DOMAIN}`) || Host(`influx.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.influxdb.tls: true
+      traefik.http.routers.influxdb.tls.certresolver: cloudflare
+      traefik.http.services.influxdb.loadbalancer.server.port: 8086
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: 10m
+    networks:
+      db_hass: null
+      db_influxdb: null
+      underground:
+        ipv4_address: "${HOMELAB_DATABASE_INFLUXDB_IPV4_ADDRESS_1:?Set HOMELAB_DATABASE_INFLUXDB_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+    restart: always
+    stop_signal: SIGINT
+    volumes:
+      - read_only: false
+        source: docker
+        target: /etc/influxdb2
+        type: volume
+        volume:
+          subpath: homelab-data/services/influxdb/config
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: /var/lib/databases/influxdb
+        target: /var/lib/influxdb2
+        type: bind
+  mariadb:
+    container_name: mariadb
+    environment:
+      MARIADB_AUTO_UPGRADE: 1
+      TZ: ${TZ}
+    hostname: mariadb
+    image: sha256:dfff46ef3f9d674ab66853ee68066e495af7942bfa4255dc39ce2ff64ac05cbe
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: 10m
+    networks:
+      db_bitwarden: null
+      db_hass: null
+      db_mariadb: null
+    pull_policy: never
+    restart: always
+    user: mysql:mysql
+    volumes:
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: /var/lib/databases/mariadb
+        target: /var/lib/mysql
+        type: bind
+      - read_only: false
+        source: docker
+        target: /etc/mysql/conf.d
+        type: volume
+        volume:
+          subpath: homelab-data/services/mariadb/config
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: ${HOMELAB_CONFIG_ROOT:?required}/mariadb/config/my.cnf
+        target: /etc/mysql/conf.d/my.cnf
+        type: bind
+  pgadmin:
+    container_name: pgadmin
+    dns:
+      - "${HOMELAB_DATABASE_DB_BACKUP_DNS_1:?Set HOMELAB_DATABASE_DB_BACKUP_DNS_1 in the private project env file}"
+      - "${HOMELAB_DATABASE_DB_BACKUP_DNS_2:?Set HOMELAB_DATABASE_DB_BACKUP_DNS_2 in the private project env file}"
+    environment:
+      PGADMIN_CONFIG_AUTHENTICATION_SOURCES: '[''oauth2'']'
+      PGADMIN_CONFIG_CONTENT_SECURITY_POLICY: '"default-src ws: http: data: blob: ''unsafe-inline'' ''unsafe-eval'';"'
+      PGADMIN_CONFIG_DEFAULT_SERVER: "'${HOMELAB_DATABASE_PGADMIN_PGADMIN_CONFIG_DEFAULT_SERVER_1:?Set HOMELAB_DATABASE_PGADMIN_PGADMIN_CONFIG_DEFAULT_SERVER_1 in the private project env file}'"
+      PGADMIN_CONFIG_DEFAULT_SERVER_PORT: "5050"
+      PGADMIN_CONFIG_OAUTH2_AUTO_CREATE_USER: "True"
+      PGADMIN_CONFIG_OAUTH2_CONFIG: '[{''OAUTH2_NAME'':''authentik'',''OAUTH2_DISPLAY_NAME'':''Authentik'',''OAUTH2_CLIENT_ID'':''${PGADMIN_OAUTH2_CLIENT_ID}'',''OAUTH2_CLIENT_SECRET'':''${PGADMIN_OAUTH2_CLIENT_SECRET}'',''OAUTH2_TOKEN_URL'':''https://sso.${DOMAIN}/application/o/token/'',''OAUTH2_AUTHORIZATION_URL'':''https://sso.${DOMAIN}/application/o/authorize/'',''OAUTH2_API_BASE_URL'':''https://sso.${DOMAIN}/'',''OAUTH2_USERINFO_ENDPOINT'':''https://sso.${DOMAIN}/application/o/userinfo/'',''OAUTH2_SERVER_METADATA_URL'':''https://sso.${DOMAIN}/application/o/pgadmin4/.well-known/openid-configuration'',''OAUTH2_LOGOUT_URL'':''https://sso.${DOMAIN}/application/o/pgadmin4/end-session/'',''OAUTH2_SCOPE'':''openid email profile'',''OAUTH2_USERNAME_CLAIM'':''preferred_username'',''OAUTH2_ICON'':''fa-key'',''OAUTH2_BUTTON_COLOR'':''#FF0000''}]'
+      PGADMIN_CONFIG_PROXY_X_FOR_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_HOST_COUNT: "0"
+      PGADMIN_CONFIG_PROXY_X_PORT_COUNT: "1"
+      PGADMIN_CONFIG_PROXY_X_PREFIX_COUNT: "0"
+      PGADMIN_CONFIG_PROXY_X_PROTO_COUNT: "1"
+      PGADMIN_CONFIG_STRICT_TRANSPORT_SECURITY_ENABLED: "False"
+      TZ: ${TZ}
+    hostname: pgadmin
+    image: sha256:53254edf695d152aef9aea533f422311536aababd9d57262a09f5a4152fd0831
+    labels:
+      traefik.enable: true
+      traefik.http.routers.pgadmin.entrypoints: https
+      traefik.http.routers.pgadmin.middlewares: chain-lan-unsafe@file
+      traefik.http.routers.pgadmin.rule: (Host(`pgadmin.${DOMAIN}`) || Host(`pgadmin.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.pgadmin.tls: true
+      traefik.http.routers.pgadmin.tls.certresolver: cloudflare
+      traefik.http.services.pgadmin.loadbalancer.server.port: 80
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: 10m
+    networks:
+      db_postgresql: null
+      macvlan_100:
+        ipv4_address: ${HOME_NETWORK_PREFIX}.245
+      underground:
+        ipv4_address: "${HOMELAB_DATABASE_PGADMIN_PGADMIN_CONFIG_DEFAULT_SERVER_1:?Set HOMELAB_DATABASE_PGADMIN_PGADMIN_CONFIG_DEFAULT_SERVER_1 in the private project env file}"
+    pull_policy: never
+    restart: always
+    volumes:
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: /mnt/nas/docker/homelab-data/services/pgadmin/data
+        target: /var/lib/pgadmin
+        type: bind
+  phpmyadmin:
+    container_name: phpmyadmin
+    environment:
+      PMA_ABSOLUTE_URI: https://maria.${DOMAIN}
+      PMA_HOST: mariadb
+      HOMELAB_PMA_SSL_WARNING_SAFE_HOSTS_JSON: ${HOMELAB_PMA_SSL_WARNING_SAFE_HOSTS_JSON:?Set
+        HOMELAB_PMA_SSL_WARNING_SAFE_HOSTS_JSON in the private project env file}
+    hostname: phpmyadmin
+    image: sha256:1dacec7c8bc93c7c76d3d3abc0ab3bf6c209d4d1405dfd8c85170740aa52feb5
+    labels:
+      traefik.enable: true
+      traefik.http.routers.phpmyadmin.entrypoints: https
+      traefik.http.routers.phpmyadmin.middlewares: local@file,authentik@file,securityHeadersUnsafeEval@file
+      traefik.http.routers.phpmyadmin.rule: (Host(`maria.${DOMAIN}`) || Host(`maria.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.phpmyadmin.tls: true
+      traefik.http.routers.phpmyadmin.tls.certresolver: cloudflare
+      traefik.http.services.phpmyadmin.loadbalancer.server.port: 80
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: 10m
+    networks:
+      db_mariadb: null
+      underground:
+        ipv4_address: "${HOMELAB_DATABASE_PHPMYADMIN_IPV4_ADDRESS_1:?Set HOMELAB_DATABASE_PHPMYADMIN_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+    restart: always
+    volumes:
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: ${HOMELAB_CONFIG_ROOT:?required}/phpmyadmin
+        target: /etc/phpmyadmin
+        type: bind
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: /home/ben/.config/homelab/private/phpmyadmin/config.secret.inc.php
+        target: /etc/phpmyadmin/config.secret.inc.php
+        type: bind
+  postgresql:
+    container_name: postgresql
+    environment:
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+    hostname: postgresql
+    image: sha256:24a90047f2d2b1d91a7ebe78270bf2559731017ae18484104a4bfd8ed7e4f23b
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: 10m
+    networks:
+      db_authentik: null
+      db_postgresql: null
+      db_zabbix: null
+    pull_policy: never
+    restart: unless-stopped
+    volumes:
+      - bind:
+          create_host_path: false
+        read_only: false
+        source: /var/lib/databases/postgresql
+        target: /var/lib/postgresql/data
+        type: bind
+volumes:
+  docker:
+    external: true
+    name: docker

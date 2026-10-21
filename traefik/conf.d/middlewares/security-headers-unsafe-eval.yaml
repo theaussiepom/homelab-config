@@ -1,0 +1,19 @@
+http:
+  middlewares:
+    securityHeadersUnsafeEval:
+      headers:
+        customresponseheaders:
+          Server: '{{env "DOMAIN"}}'
+          X-Powered-By: '{{env "DOMAIN"}}'
+        accesscontrolallowmethods: GET,POST
+        accesscontrolmaxage: 100
+        accesscontrolalloworiginlist: "*"
+        addvaryheader: true
+        contentSecurityPolicy: child-src 'self'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';
+        contenttypenosniff: true
+        referrerpolicy: origin-when-cross-origin
+        sslredirect: true
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true

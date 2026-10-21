@@ -1,0 +1,49 @@
+global:
+  sendAnonymousUsage: false
+log:
+  level: INFO
+api:
+  dashboard: true
+  insecure: false
+entryPoints:
+  http:
+    address: :80
+    http:
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+          permanent: true
+  https:
+    address: :443
+environment:
+  CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: !env HOMELAB_TRAEFIK_EMAIL_1
+      storage: /var/traefik/certs/cloudflare-acme.json
+      caServer: https://acme-v02.api.letsencrypt.org/directory
+      keyType: EC256
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - 1.1.1.1:53
+          - 1.0.0.1:53
+providers:
+  docker:
+    endpoint: unix:///var/run/docker.sock
+    exposedByDefault: false
+    network: underground
+  file:
+    directory: /etc/traefik/conf.d
+    watch: true
+
+experimental:
+  plugins:
+    check-headers:
+      moduleName: github.com/dkijkuit/checkheadersplugin
+      version: v0.3.1
+    cloudflare:
+      moduleName: github.com/agence-gaya/traefik-plugin-cloudflare
+      version: v1.2.0

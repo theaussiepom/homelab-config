@@ -1,0 +1,6 @@
+NAME="Synology DSM"
+ID=dsm
+VERSION=7.2.2
+PRETTY_NAME="Synology DSM v7.2"
+HOME_URL="https://synology.com"
+BUG_REPORT_URL="https://synology.com"

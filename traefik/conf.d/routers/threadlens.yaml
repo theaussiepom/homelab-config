@@ -1,0 +1,37 @@
+# ThreadLens on Pironman via Beast Traefik.
+# API routes: LAN-only, no Authentik (Home Assistant config flow + coordinator).
+# UI routes: LAN + Authentik (browser dashboard).
+
+http:
+  routers:
+    threadlens-api:
+      entryPoints:
+        - https
+      service: threadlens
+      rule: (Host(`threadlens.{{env "DOMAIN"}}`) || Host(`threadlens.{{env "DOMAIN_ALIAS"}}`)) && PathPrefix(`/api`)
+      priority: 100
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - local@file
+        - securityHeadersThreadLens@file
+
+    threadlens:
+      entryPoints:
+        - https
+      service: threadlens
+      rule: (Host(`threadlens.{{env "DOMAIN"}}`) || Host(`threadlens.{{env "DOMAIN_ALIAS"}}`))
+      priority: 1
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - local@file
+        - authentik@file
+        - securityHeadersThreadLens@file
+
+  services:
+    threadlens:
+      loadBalancer:
+        servers:
+          - url: 'http://{{env "HOME_NETWORK_PREFIX"}}.4:8128'
+        passHostHeader: true

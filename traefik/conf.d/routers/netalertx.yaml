@@ -1,0 +1,17 @@
+http:
+  routers:
+    netalertx-local:
+      entryPoints:
+        - https
+      service: netalertx
+      rule: (Host(`netalertx.{{env "DOMAIN"}}`) || Host(`netalertx.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-strict@file
+
+  services:
+    netalertx:
+      loadBalancer:
+        servers:
+          - url: http://{{env "HOME_NETWORK_PREFIX"}}.240:20211/

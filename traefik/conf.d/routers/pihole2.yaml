@@ -1,0 +1,17 @@
+http:
+  routers:
+    pihole2:
+      entryPoints:
+        - https
+      service: pihole2
+      rule: (Host(`pihole2.{{env "DOMAIN"}}`) || Host(`pihole2.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-forwardauth-unsafe@file
+
+  services:
+    pihole2:
+      loadBalancer:
+        servers:
+          - url: http://pihole2.underground:80/
