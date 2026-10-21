@@ -73,7 +73,7 @@ services:
       ZBX_SSO_IDP_CERT: /usr/share/zabbix/conf/certs/cert.pem
       ZBX_SSO_SP_CERT: /usr/share/zabbix/conf/certs/cert.pem
       ZBX_SSO_SP_KEY: /usr/share/zabbix/conf/certs/key.pem
-      ZBX_SSO_SETTINGS: "{'baseurl':'https://zabbix.${HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_ZBX_SSO_SETTINGS_1:?Set HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_ZBX_SSO_SETTINGS_1 in the private project env file}','use_proxy_headers':true,'strict':false}"
+      ZBX_SSO_SETTINGS: "{'baseurl':'https://zabbix.${HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_ZBX_SSO_SETTINGS_1:?Set HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_ZBX_SSO_SETTINGS_1 in the private project env file}','use_proxy_headers':true,'strict':true}"
     volumes:
     - type: volume
       source: docker

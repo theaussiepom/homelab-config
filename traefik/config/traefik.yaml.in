@@ -4,7 +4,7 @@ log:
   level: INFO
 api:
   dashboard: true
-  insecure: true
+  insecure: false
 entryPoints:
   http:
     address: :80

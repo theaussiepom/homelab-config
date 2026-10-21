@@ -32,3 +32,9 @@ copy populated environment files into this repository.
 
 Pi-hole also rejects an empty private API password. An intentionally unauthenticated
 installation is not a default supported by this public configuration.
+
+Traefik's separate insecure API listener is disabled. The existing HTTPS dashboard
+router still uses `api@internal` and its authentication middleware. Zabbix SAML
+uses strict response validation. Before a separate deployment, verify the private
+IdP/SP metadata, canonical base URL, proxy headers and login/logout for each
+supported hostname. These source settings do not establish live SSO acceptance.
