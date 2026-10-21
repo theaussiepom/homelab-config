@@ -42,6 +42,7 @@ services:
     hostname: scrypted
     container_name: scrypted
     labels:
+      com.centurylinklabs.watchtower.scope: scrypted
       traefik.enable: true
       traefik.http.routers.scrypted.tls: true
       traefik.http.routers.scrypted.tls.certresolver: cloudflare
