@@ -1,0 +1,91 @@
+volumes:
+  docker:
+    name: docker
+    external: true
+services:
+  scrypted:
+    environment:
+      SCRYPTED_NVR_VOLUME: /nvr
+      SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION: Bearer ${WATCHTOWER_HTTP_API_TOKEN}
+      SCRYPTED_WEBHOOK_UPDATE: scrypted-watchtower:8080/v1/update
+      SCRYPTED_SECURE_PORT: 443
+      SCRYPTED_INSECURE_PORT: 80
+      SCRYPTED_DEFAULT_AUTHENTICATION: ${SCRYPTED_DEFAULT_AUTHENTICATION}
+      TZ: ${TZ}
+    security_opt:
+    - apparmor:unconfined
+    volumes:
+    - type: bind
+      source: /var/run/dbus
+      target: /var/run/dbus
+      read_only: false
+      bind:
+        create_host_path: false
+    - type: bind
+      source: /var/run/avahi-daemon/socket
+      target: /var/run/avahi-daemon/socket
+      read_only: false
+      bind:
+        create_host_path: false
+    - type: volume
+      source: docker
+      target: /server/volume
+      read_only: false
+      volume:
+        subpath: homelab-data/services/scrypted/data
+    - type: volume
+      source: docker
+      target: /nvr
+      read_only: false
+      volume:
+        subpath: homelab-data/services/scrypted/nvr
+    hostname: scrypted
+    container_name: scrypted
+    labels:
+      traefik.enable: true
+      traefik.http.routers.scrypted.tls: true
+      traefik.http.routers.scrypted.tls.certresolver: cloudflare
+      traefik.http.routers.scrypted.entrypoints: https
+      traefik.http.routers.scrypted.rule: (Host(`scrypted.${DOMAIN}`) || Host(`scrypted.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.scrypted.middlewares: chain-lan-forwardauth-unsafe@file
+      traefik.http.services.scrypted.loadbalancer.server.port: 80
+    restart: always
+    image: ghcr.io/koush/scrypted
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 10
+    dns:
+    - "${HOMELAB_SCRYPTED_SCRYPTED_DNS_1:?Set HOMELAB_SCRYPTED_SCRYPTED_DNS_1 in the private project env file}"
+    - "${HOMELAB_SCRYPTED_SCRYPTED_DNS_2:?Set HOMELAB_SCRYPTED_SCRYPTED_DNS_2 in the private project env file}"
+    networks:
+    - underground
+  watchtower:
+    hostname: scrypted-watchtower
+    environment:
+    - WATCHTOWER_HTTP_API_TOKEN=${SCRYPTED_BEARER}
+    - WATCHTOWER_HTTP_API_UPDATE=true
+    - WATCHTOWER_SCOPE=scrypted
+    - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+    image: nickfedor/watchtower
+    restart: unless-stopped
+    volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+      read_only: false
+      bind:
+        create_host_path: false
+    labels:
+    - com.centurylinklabs.watchtower.scope=scrypted
+    command: --interval 3600 --cleanup --scope scrypted
+    dns:
+    - "${HOMELAB_SCRYPTED_SCRYPTED_DNS_1:?Set HOMELAB_SCRYPTED_SCRYPTED_DNS_1 in the private project env file}"
+    - "${HOMELAB_SCRYPTED_SCRYPTED_DNS_2:?Set HOMELAB_SCRYPTED_SCRYPTED_DNS_2 in the private project env file}"
+    networks:
+    - underground
+networks:
+  underground:
+    external: true
+name: scrypted

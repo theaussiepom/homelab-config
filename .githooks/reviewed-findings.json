@@ -1,0 +1,16 @@
+[
+  {
+    "path": "zabbix/web/certs/saml/Utils.php",
+    "sha256": "e84a397f70f197e2046230750efc2326df7c662b2d45a2c72f8fe82d838a7a5b",
+    "rule": "private-key",
+    "line": 255,
+    "reason": "Previously reviewed unchanged HA template expression or PEM formatting literal; not credential material."
+  },
+  {
+    "path": "zabbix/web/certs/saml/Utils.php",
+    "sha256": "e84a397f70f197e2046230750efc2326df7c662b2d45a2c72f8fe82d838a7a5b",
+    "rule": "private-key",
+    "line": 258,
+    "reason": "Previously reviewed unchanged HA template expression or PEM formatting literal; not credential material."
+  }
+]

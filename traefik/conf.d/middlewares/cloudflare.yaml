@@ -1,0 +1,16 @@
+http:
+  middlewares:
+    cloudflare-header:
+      plugin:
+        check-headers:
+          headers:
+            - header:
+              name: "x-dennis-token"
+              matchtype: one
+              values:
+                - '{{env "X_DENNIS_TOKEN"}}'
+    cloudflare:
+      plugin:
+        cloudflare:
+          trustedCIDRs: []
+          overwriteRequestHeader: true

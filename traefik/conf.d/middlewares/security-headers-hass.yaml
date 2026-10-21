@@ -1,0 +1,19 @@
+http:
+  middlewares:
+    securityHeadersHass:
+      headers:
+        customresponseheaders:
+          Server: '{{env "DOMAIN"}}'
+          X-Powered-By: '{{env "DOMAIN"}}'
+        accesscontrolallowmethods: GET,POST
+        accesscontrolmaxage: 100
+        accesscontrolalloworiginlist: "*"
+        addvaryheader: true
+        contentSecurityPolicy: child-src 'self' https://music.{{env "DOMAIN"}} https://music.{{env "DOMAIN_ALIAS"}} https://mass.{{env "DOMAIN"}} https://mass.{{env "DOMAIN_ALIAS"}} https://scrypted.{{env "DOMAIN"}} https://scrypted.{{env "DOMAIN_ALIAS"}}; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';
+        contenttypenosniff: true
+        referrerpolicy: origin-when-cross-origin
+        sslredirect: true
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true

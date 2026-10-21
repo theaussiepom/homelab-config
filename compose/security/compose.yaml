@@ -1,0 +1,231 @@
+volumes:
+  docker:
+    name: docker
+    external: true
+services:
+  bitwarden:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:a44bfe3d8a4d0c85f836f3caf9a1995882b80f777863563a070cc69862256531
+    hostname: bitwarden
+    container_name: bitwarden
+    labels:
+      traefik.enable: true
+      traefik.http.routers.bitwarden.tls: true
+      traefik.http.routers.bitwarden.tls.certresolver: cloudflare
+      traefik.http.routers.bitwarden.entrypoints: https
+      traefik.http.routers.bitwarden.rule: Host(`bitwarden.${DOMAIN}`) && HeaderRegexp(`CF-Connecting-IP`, `.*`)
+      traefik.http.routers.bitwarden.middlewares: cloudflare@file,cloudflare-header@file,securityHeadersBitwarden@file
+      traefik.http.routers.bitwarden-local.tls: true
+      traefik.http.routers.bitwarden-local.tls.certresolver: cloudflare
+      traefik.http.routers.bitwarden-local.entrypoints: https
+      traefik.http.routers.bitwarden-local.rule: Host(`bitwarden.${DOMAIN}`)
+      traefik.http.routers.bitwarden-local.middlewares: local@file,securityHeadersBitwarden@file
+      traefik.http.services.bitwarden.loadbalancer.server.port: 8080
+    security_opt:
+    - no-new-privileges:true
+    healthcheck:
+      test: curl -fsSo - http://localhost:8080
+    environment:
+      BW_DOMAIN: bitwarden.${DOMAIN}
+      BW_DB_PROVIDER: mysql
+      BW_DB_SERVER: mariadb.db_bitwarden
+      BW_DB_DATABASE: bitwarden_vault
+      BW_DB_USERNAME: bitwarden
+      BW_DB_PASSWORD: ${BW_DB_PASSWORD}
+      BW_INSTALLATION_ID: ${BW_INSTALLATION_ID}
+      BW_INSTALLATION_KEY: ${BW_INSTALLATION_KEY}
+      BW_ENABLE_ADMIN: true
+      globalSettings__logDirectory: /etc/bitwarden/logs
+      adminSettings__admins: ${BW_EMAIL_ADMIN}
+      globalSettings_baseServiceUri_vault: https://bitwarden.${DOMAIN}
+      globalSettings__disableUserRegistration: false
+      globalSettings__mail__replyToEmail: ${BW_EMAIL_REPLY_TO}
+      globalSettings__mail__smtp__host: ${BW_EMAIL_SMTP_HOST}
+      globalSettings__mail__smtp__ssl: false
+      globalSettings__mail__smtp__startTls: true
+      globalSettings__mail__smtp__port: 587
+      globalSettings__mail__smtp__username: ${BW_EMAIL_SMTP_USERNAME}
+      globalSettings__mail__smtp__password: ${BW_EMAIL_SMTP_PASSWORD}
+      globalSettings__enableCloudCommunication: true
+      globalSettings__yubico__clientId: ${BW_YUBICO_CLIENT_ID}
+      globalSettings__yubico__key: ${BW_YUBICO_KEY}
+    volumes:
+    - type: volume
+      source: docker
+      target: /etc/bitwarden
+      read_only: false
+      volume:
+        subpath: homelab-data/services/bitwarden/data
+    - type: volume
+      source: docker
+      target: /var/log/bitwarden
+      read_only: false
+      volume:
+        subpath: homelab-data/services/bitwarden/logs
+    restart: always
+    dns:
+    - "${HOMELAB_SECURITY_BITWARDEN_DNS_1:?Set HOMELAB_SECURITY_BITWARDEN_DNS_1 in the private project env file}"
+    - "${HOMELAB_SECURITY_BITWARDEN_DNS_2:?Set HOMELAB_SECURITY_BITWARDEN_DNS_2 in the private project env file}"
+    networks:
+      db_bitwarden: null
+      underground:
+        ipv4_address: "${HOMELAB_SECURITY_BITWARDEN_IPV4_ADDRESS_1:?Set HOMELAB_SECURITY_BITWARDEN_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+  authentik_redis:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:778c3ea605c2c786ad6f7b9efe50c065903b1b4c7a4f5b2c6d76507b01402470
+    container_name: authentik_redis
+    command: --save 60 1 --loglevel warning
+    hostname: redis
+    restart: unless-stopped
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - redis-cli ping | grep PONG
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    expose:
+    - 6379
+    volumes:
+    - type: volume
+      source: docker
+      target: /data
+      read_only: false
+      volume:
+        subpath: homelab-data/services/authentik/redis
+    networks:
+    - internal_authentik
+    pull_policy: never
+  authentik_server:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:4618e234635dbfeb9c8beef0d0c6f00819887b69ddc2ffeab7209bc01e64bf08
+    container_name: sso_server
+    hostname: sso_server
+    restart: unless-stopped
+    command: server
+    labels:
+      traefik.enable: true
+      traefik.http.routers.authentik.tls: true
+      traefik.http.routers.authentik.tls.certresolver: cloudflare
+      traefik.http.routers.authentik.entrypoints: https
+      traefik.http.routers.authentik.rule: (Host(`sso.${DOMAIN}`) || Host(`sso.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`)) && HeaderRegexp(`CF-Connecting-IP`, `.*`)
+      traefik.http.routers.authentik.middlewares: chain-public-cf-strict@file
+      traefik.http.routers.authentik-local.tls: true
+      traefik.http.routers.authentik-local.tls.certresolver: cloudflare
+      traefik.http.routers.authentik-local.entrypoints: https
+      traefik.http.routers.authentik-local.rule: (Host(`sso.${DOMAIN}`) || Host(`sso.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.authentik-local.middlewares: chain-lan-strict@file
+      traefik.http.services.authentik.loadbalancer.server.port: 9000
+    environment:
+      AUTHENTIK_EMAIL__HOST: ${AUTHENTIK_SMTP_HOST}
+      AUTHENTIK_EMAIL__PORT: 587
+      AUTHENTIK_EMAIL__USERNAME: ${AUTHENTIK_SMTP_USERNAME}
+      AUTHENTIK_EMAIL__PASSWORD: ${AUTHENTIK_SMTP_PASSWORD}
+      AUTHENTIK_EMAIL__USE_SSL: false
+      AUTHENTIK_EMAIL__USE_TLS: true
+      AUTHENTIK_EMAIL__FROM: ${AUTHENTIK_REPLY_TO}
+      AUTHENTIK_REDIS__HOST: redis.internal_authentik
+      AUTHENTIK_POSTGRESQL__HOST: postgresql.db_authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+    volumes:
+    - type: volume
+      source: docker
+      target: /media
+      read_only: false
+      volume:
+        subpath: homelab-data/services/authentik/media
+    - type: volume
+      source: docker
+      target: /templates
+      read_only: false
+      volume:
+        subpath: homelab-data/services/authentik/custom-templates
+    networks:
+      db_authentik: null
+      underground:
+        ipv4_address: "${HOMELAB_SECURITY_AUTHENTIK_SERVER_IPV4_ADDRESS_1:?Set HOMELAB_SECURITY_AUTHENTIK_SERVER_IPV4_ADDRESS_1 in the private project env file}"
+      internal_authentik: null
+    pull_policy: never
+  authentik_worker:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:4618e234635dbfeb9c8beef0d0c6f00819887b69ddc2ffeab7209bc01e64bf08
+    container_name: sso_worker
+    hostname: sso_worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_EMAIL__HOST: ${AUTHENTIK_SMTP_HOST}
+      AUTHENTIK_EMAIL__PORT: 587
+      AUTHENTIK_EMAIL__USERNAME: ${AUTHENTIK_SMTP_USERNAME}
+      AUTHENTIK_EMAIL__PASSWORD: ${AUTHENTIK_SMTP_PASSWORD}
+      AUTHENTIK_EMAIL__USE_SSL: false
+      AUTHENTIK_EMAIL__USE_TLS: true
+      AUTHENTIK_EMAIL__FROM: ${AUTHENTIK_REPLY_TO}
+      AUTHENTIK_REDIS__HOST: redis.internal_authentik
+      AUTHENTIK_POSTGRESQL__HOST: postgresql.db_authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+    volumes:
+    - type: volume
+      source: docker
+      target: /media
+      read_only: false
+      volume:
+        subpath: homelab-data/services/authentik/media
+    - type: volume
+      source: docker
+      target: /certs
+      read_only: false
+      volume:
+        subpath: homelab-data/services/authentik/certs
+    - type: volume
+      source: docker
+      target: /templates
+      read_only: false
+      volume:
+        subpath: homelab-data/services/authentik/custom-templates
+    dns:
+    - "${HOMELAB_SECURITY_BITWARDEN_DNS_1:?Set HOMELAB_SECURITY_BITWARDEN_DNS_1 in the private project env file}"
+    - "${HOMELAB_SECURITY_BITWARDEN_DNS_2:?Set HOMELAB_SECURITY_BITWARDEN_DNS_2 in the private project env file}"
+    networks:
+      db_authentik: null
+      underground:
+        ipv4_address: "${HOMELAB_SECURITY_AUTHENTIK_WORKER_IPV4_ADDRESS_1:?Set HOMELAB_SECURITY_AUTHENTIK_WORKER_IPV4_ADDRESS_1 in the private project env file}"
+      internal_authentik: null
+    pull_policy: never
+networks:
+  db_authentik:
+    external: true
+  db_bitwarden:
+    external: true
+  underground:
+    external: true
+  security:
+    external: true
+  internal_authentik:
+    name: internal_authentik
+    internal: true
+name: security

@@ -1,0 +1,31 @@
+http:
+  routers:
+
+    photos:
+      entryPoints:
+        - https
+      service: photos
+      rule: (Host(`photos.{{env "DOMAIN"}}`) || Host(`photos.{{env "DOMAIN_ALIAS"}}`)) && HeaderRegexp(`CF-Connecting-IP`, `.*`)
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - cloudflare@file
+        - cloudflare-header@file
+        - securityHeadersUnsafeEval@file
+
+    photos-local:
+      entryPoints:
+        - https
+      service: photos
+      rule: (Host(`photos.{{env "DOMAIN"}}`) || Host(`photos.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - local@file
+        - securityHeadersUnsafeEval@file
+
+  services:
+    photos:
+      loadBalancer:
+        servers:
+          - url: http://{{env "HOME_NETWORK_PREFIX"}}.2:31765/

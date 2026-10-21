@@ -1,0 +1,27 @@
+http:
+  middlewares:
+    chain-lan-forwardauth-unsafe:
+      chain:
+        middlewares:
+          - local@file
+          - authentik@file
+          - securityHeadersUnsafe@file
+
+    chain-lan-unsafe:
+      chain:
+        middlewares:
+          - local@file
+          - securityHeadersUnsafe@file
+
+    chain-lan-strict:
+      chain:
+        middlewares:
+          - local@file
+          - securityHeaders@file
+
+    chain-public-cf-strict:
+      chain:
+        middlewares:
+          - cloudflare@file
+          - cloudflare-header@file
+          - securityHeaders@file

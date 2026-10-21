@@ -1,0 +1,19 @@
+{{ if not (env "HOMELAB_TRAEFIK_LOCAL_0_1") }}{{ fail "Missing HOMELAB_TRAEFIK_LOCAL_0_1" }}{{ end }}
+{{ if not (env "HOMELAB_TRAEFIK_LOCAL_1_1") }}{{ fail "Missing HOMELAB_TRAEFIK_LOCAL_1_1" }}{{ end }}
+{{ if not (env "HOMELAB_TRAEFIK_LOCAL_2_1") }}{{ fail "Missing HOMELAB_TRAEFIK_LOCAL_2_1" }}{{ end }}
+{{ if not (env "HOMELAB_TRAEFIK_LOCAL_3_1") }}{{ fail "Missing HOMELAB_TRAEFIK_LOCAL_3_1" }}{{ end }}
+{{ if not (env "HOMELAB_TRAEFIK_LOCAL_4_1") }}{{ fail "Missing HOMELAB_TRAEFIK_LOCAL_4_1" }}{{ end }}
+{{ if not (env "HOMELAB_TRAEFIK_LOCAL_5_1") }}{{ fail "Missing HOMELAB_TRAEFIK_LOCAL_5_1" }}{{ end }}
+http:
+  middlewares:
+    local:
+      plugin:
+        cloudflare:
+          trustedCIDRs:
+            - {{ printf "%s/28" (env "HOMELAB_TRAEFIK_LOCAL_0_1") | quote }}
+            - {{ printf "%s/28" (env "HOMELAB_TRAEFIK_LOCAL_1_1") | quote }}
+            - {{ printf "%s/24" (env "HOMELAB_TRAEFIK_LOCAL_2_1") | quote }}
+            - {{ printf "%s/24" (env "HOMELAB_TRAEFIK_LOCAL_3_1") | quote }}
+            - {{ printf "%s/24" (env "HOMELAB_TRAEFIK_LOCAL_4_1") | quote }}
+            - {{ printf "%s/24" (env "HOMELAB_TRAEFIK_LOCAL_5_1") | quote }}
+          overwriteRequestHeader: false

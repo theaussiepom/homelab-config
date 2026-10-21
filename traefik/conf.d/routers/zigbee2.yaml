@@ -1,0 +1,17 @@
+http:
+  routers:
+    zigbee2:
+      entryPoints:
+        - https
+      service: zigbee2
+      rule: (Host(`zigbee2.{{env "DOMAIN"}}`) || Host(`zigbee2.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-forwardauth-unsafe@file
+
+  services:
+    zigbee2:
+      loadBalancer:
+        servers:
+          - url: http://zigbee2.underground:8099/

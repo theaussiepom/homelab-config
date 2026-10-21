@@ -1,0 +1,11 @@
+http:
+  routers:
+    traefik:
+      entryPoints:
+        - https
+      service: api@internal
+      rule: (Host(`proxy.{{env "DOMAIN"}}`) || Host(`proxy.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-forwardauth-unsafe@file

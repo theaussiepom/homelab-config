@@ -1,0 +1,24 @@
+# ZigbeeLens on Beast via Traefik file provider.
+# API routes: LAN-only, no Authentik (Home Assistant config flow + coordinator).
+# UI routes: Docker labels on zigbeelens service — LAN + Authentik.
+
+http:
+  routers:
+    zigbeelens-api:
+      entryPoints:
+        - https
+      service: zigbeelens-api
+      rule: (Host(`zigbeelens.{{env "DOMAIN"}}`) || Host(`zigbeelens.{{env "DOMAIN_ALIAS"}}`)) && PathPrefix(`/api`)
+      priority: 100
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - local@file
+        - securityHeadersZigbeeLens@file
+
+  services:
+    zigbeelens-api:
+      loadBalancer:
+        servers:
+          - url: "http://zigbeelens:8377"
+        passHostHeader: true

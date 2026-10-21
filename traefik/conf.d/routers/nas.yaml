@@ -1,0 +1,18 @@
+http:
+  routers:
+    nas-local:
+      entryPoints:
+        - https
+      service: nas
+      rule: (Host(`nas.{{env "DOMAIN"}}`) || Host(`nas.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - local@file
+        - securityHeadersUnsafeEval@file
+
+  services:
+    nas:
+      loadBalancer:
+        servers:
+          - url: http://{{env "HOME_NETWORK_PREFIX"}}.2:31763/

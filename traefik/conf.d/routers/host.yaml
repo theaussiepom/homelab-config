@@ -1,0 +1,23 @@
+http:
+  routers:
+    host-local:
+      entryPoints:
+        - https
+      service: host
+      rule: (Host(`host.{{env "DOMAIN"}}`) || Host(`host.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-unsafe@file
+
+  serversTransports:
+    hostTransport:
+      serverName: 'host.{{env "DOMAIN_ALIAS"}}'
+      insecureSkipVerify: false
+
+  services:
+    host:
+      loadBalancer:
+        servers:
+          - url: https://{{env "HOME_NETWORK_PREFIX"}}.1:443/
+        serversTransport: hostTransport

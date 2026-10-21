@@ -1,0 +1,17 @@
+http:
+  routers:
+    glances-local:
+      entryPoints:
+        - https
+      service: glances
+      rule: (Host(`glances.{{env "DOMAIN"}}`) || Host(`glances.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-unsafe@file
+
+  services:
+    glances:
+      loadBalancer:
+        servers:
+          - url: http://{{env "HOME_NETWORK_PREFIX"}}.240:61208/

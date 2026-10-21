@@ -1,0 +1,37 @@
+{{ if not (env "HOMELAB_TRAEFIK_SECURITY_HEADERS_THREADLENS_CONTENTSECURITYPOLICY_1") }}{{ fail "Missing HOMELAB_TRAEFIK_SECURITY_HEADERS_THREADLENS_CONTENTSECURITYPOLICY_1" }}{{ end }}
+# Traefik dynamic middleware — ZigbeeLens Core UI + optional HA iframe embedding.
+#
+# Copy to your Traefik file provider directory, e.g. on Beast:
+#   /mnt/nas/docker/network/traefik/conf.d/middlewares/security-headers-zigbeelens.yaml
+#
+# Reference from ZigbeeLens router labels:
+#   traefik.http.routers.zigbeelens.middlewares: local@file,authentik@file,securityHeadersZigbeeLens@file
+#   traefik.http.routers.zigbeelens-tablets.middlewares: local@file,securityHeadersZigbeeLens@file
+#
+# Replace the Home Assistant origin below with your real URL, for example:
+#   https://hass.site.example.invalid https://hass.{{env "DOMAIN_ALIAS"}}
+#
+# Do not use securityHeadersUnsafe@file for ZigbeeLens — its CSP blocks Google Fonts
+# (style-src/font-src 'self' only) and breaks dashboard styling.
+
+http:
+  middlewares:
+    securityHeadersZigbeeLens:
+      headers:
+        frameDeny: false
+        customresponseheaders:
+          Server: '{{env "DOMAIN"}}'
+          X-Powered-By: '{{env "DOMAIN"}}'
+          X-Frame-Options: ""
+        accesscontrolallowmethods: GET,POST
+        accesscontrolmaxage: 100
+        accesscontrolalloworiginlist: "*"
+        addvaryheader: true
+        contentSecurityPolicy: {{ printf "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self' https://hass.%s https://hass.%s;" (env "HOMELAB_TRAEFIK_SECURITY_HEADERS_THREADLENS_CONTENTSECURITYPOLICY_1") (env "DOMAIN_ALIAS") | quote }}
+        contenttypenosniff: true
+        referrerpolicy: origin-when-cross-origin
+        sslredirect: true
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true

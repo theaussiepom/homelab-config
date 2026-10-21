@@ -1,0 +1,132 @@
+volumes:
+  retained_zabbix_server_export:
+    external: true
+    name: 2f869547df2dc30f36cebb87b33013a87005010e355c86781a6e07f5dec7897f
+  retained_zabbix_server_snmptraps:
+    external: true
+    name: 7ee16c99f4b6c26e58c06373cb204e2dc3bc07332494ace37ec54d3088789800
+  docker:
+    name: docker
+    external: true
+services:
+  zabbix-server:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:8a00cb72f93d7b221d8b0dd387a887246111226ea4587ca444ef36dad30d68a9
+    container_name: zabbix-server
+    hostname: zabbix-server
+    restart: always
+    environment:
+      DB_SERVER_HOST: postgresql.db_zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: ${ZABBIX_POSTGRESQL_PASSWORD}
+      POSTGRES_DB: zabbix
+      ZBX_ENABLE_SNMP_TRAPS: true
+    dns:
+    - "${HOMELAB_MONITORING_ZABBIX_SERVER_DNS_1:?Set HOMELAB_MONITORING_ZABBIX_SERVER_DNS_1 in the private project env file}"
+    - "${HOMELAB_MONITORING_ZABBIX_SERVER_DNS_2:?Set HOMELAB_MONITORING_ZABBIX_SERVER_DNS_2 in the private project env file}"
+    networks:
+      db_zabbix:
+        ipv4_address: "${HOMELAB_MONITORING_ZABBIX_SERVER_IPV4_ADDRESS_1:?Set HOMELAB_MONITORING_ZABBIX_SERVER_IPV4_ADDRESS_1 in the private project env file}"
+      underground:
+        ipv4_address: "${HOMELAB_MONITORING_ZABBIX_SERVER_IPV4_ADDRESS_2:?Set HOMELAB_MONITORING_ZABBIX_SERVER_IPV4_ADDRESS_2 in the private project env file}"
+    volumes:
+    - type: volume
+      source: retained_zabbix_server_export
+      target: /var/lib/zabbix/export
+      read_only: false
+    - type: volume
+      source: retained_zabbix_server_snmptraps
+      target: /var/lib/zabbix/snmptraps
+      read_only: false
+    pull_policy: never
+  zabbix-web-nginx-pgsql:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:bb53d2293310235441836be97eddb7fde30a11b69282dac4935ed08618e7079d
+    container_name: zabbix-web
+    labels:
+      traefik.enable: true
+      traefik.http.routers.zabbix.tls: true
+      traefik.http.routers.zabbix.tls.certresolver: cloudflare
+      traefik.http.routers.zabbix.entrypoints: https
+      traefik.http.routers.zabbix.rule: (Host(`zabbix.${DOMAIN}`) || Host(`zabbix.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.zabbix.middlewares: local@file
+      traefik.http.services.zabbix.loadbalancer.server.port: 8080
+    restart: always
+    depends_on:
+    - zabbix-server
+    environment:
+      DB_SERVER_HOST: postgresql.db_zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: ${ZABBIX_POSTGRESQL_PASSWORD}
+      POSTGRES_DB: zabbix
+      PHP_TZ: ${TZ}
+      ZBX_ALLOW_HTTP_AUTH: false
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SSO_IDP_CERT: /usr/share/zabbix/conf/certs/cert.pem
+      ZBX_SSO_SP_CERT: /usr/share/zabbix/conf/certs/cert.pem
+      ZBX_SSO_SP_KEY: /usr/share/zabbix/conf/certs/key.pem
+      ZBX_SSO_SETTINGS: "{'baseurl':'https://zabbix.${HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_ZBX_SSO_SETTINGS_1:?Set HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_ZBX_SSO_SETTINGS_1 in the private project env file}','use_proxy_headers':true,'strict':false}"
+    volumes:
+    - type: volume
+      source: docker
+      target: /usr/share/zabbix/conf/certs
+      read_only: false
+      volume:
+        subpath: homelab-data/services/zabbix/web/certs
+    dns:
+    - "${HOMELAB_MONITORING_ZABBIX_SERVER_DNS_1:?Set HOMELAB_MONITORING_ZABBIX_SERVER_DNS_1 in the private project env file}"
+    - "${HOMELAB_MONITORING_ZABBIX_SERVER_DNS_2:?Set HOMELAB_MONITORING_ZABBIX_SERVER_DNS_2 in the private project env file}"
+    networks:
+      db_zabbix: null
+      underground:
+        ipv4_address: "${HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_IPV4_ADDRESS_1:?Set HOMELAB_MONITORING_ZABBIX_WEB_NGINX_PGSQL_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+  zabbix-agent:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:faae8fdfb48382b7ab0c93d1d07ac45465f2c13bf0b691ff08b4717e16eedc5b
+    privileged: true
+    container_name: zabbix-agent
+    restart: always
+    depends_on:
+    - zabbix-server
+    user: root:root
+    environment:
+      ZBX_HOSTNAME: zabbix-server
+    volumes:
+    - type: bind
+      source: /var/lib/databases
+      target: /var/lib/databases
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+      read_only: true
+      bind:
+        create_host_path: false
+    dns:
+    - "${HOMELAB_MONITORING_ZABBIX_SERVER_DNS_1:?Set HOMELAB_MONITORING_ZABBIX_SERVER_DNS_1 in the private project env file}"
+    - "${HOMELAB_MONITORING_ZABBIX_SERVER_DNS_2:?Set HOMELAB_MONITORING_ZABBIX_SERVER_DNS_2 in the private project env file}"
+    networks:
+      underground:
+        ipv4_address: "${HOMELAB_MONITORING_ZABBIX_AGENT_IPV4_ADDRESS_1:?Set HOMELAB_MONITORING_ZABBIX_AGENT_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+networks:
+  underground:
+    external: true
+  db_zabbix:
+    external: true
+name: monitoring

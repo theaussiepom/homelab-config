@@ -1,0 +1,28 @@
+http:
+  routers:
+
+    webdav:
+      entryPoints:
+        - https
+      service: webdav
+      rule: (Host(`webdav.{{env "DOMAIN"}}`) || Host(`webdav.{{env "DOMAIN_ALIAS"}}`)) && HeaderRegexp(`CF-Connecting-IP`, `.*`)
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-public-cf-strict@file
+
+    webdav-local:
+      entryPoints:
+        - https
+      service: webdav
+      rule: (Host(`webdav.{{env "DOMAIN"}}`) || Host(`webdav.{{env "DOMAIN_ALIAS"}}`))
+      tls:
+        certresolver: cloudflare
+      middlewares:
+        - chain-lan-strict@file
+
+  services:
+    webdav:
+      loadBalancer:
+        servers:
+          - url: http://{{env "HOME_NETWORK_PREFIX"}}.2:31766/

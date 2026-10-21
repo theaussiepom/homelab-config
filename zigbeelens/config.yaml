@@ -1,0 +1,43 @@
+server:
+  host: 0.0.0.0
+  port: 8377
+mode:
+  mock: false
+mqtt:
+  server: mqtt://mosquitto:1883
+  client_id: zigbeelens
+  tls:
+    enabled: false
+    reject_unauthorized: true
+networks:
+- id: home
+  name: Home
+  base_topic: home
+- id: home2
+  name: Home 2
+  base_topic: home2
+storage:
+  path: /data/zigbeelens.sqlite
+  retention_days: 30
+features:
+  mqtt_collector: true
+  mqtt_discovery: true
+  bridge_logs: true
+  device_payload_history: true
+  manual_network_map: false
+  automatic_network_map: false
+topology:
+  enabled: true
+  startup_scan: true
+  startup_stable_delay_seconds: 60
+  refresh_interval_seconds: 0
+  manual_capture_enabled: false
+  automatic_capture_enabled: false
+  capture_on_incident: false
+mqtt_discovery:
+  enabled: true
+  topic_prefix: homeassistant
+  state_topic_prefix: zigbeelens
+  retain: true
+  device_name: ZigbeeLens
+  object_id_prefix: zigbeelens

@@ -1,0 +1,327 @@
+volumes:
+  docker:
+    name: docker
+    driver: local
+    driver_opts:
+      type: nfs
+      o: "addr=${HOMELAB_NETWORK_SHARED_O_1:?Set HOMELAB_NETWORK_SHARED_O_1 in the private project env file},rw,nfsvers=4.1"
+      device: :/volume1/docker-beast
+  pihole-ftl-db:
+    name: pihole-ftl-db
+    external: true
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    restart: always
+    ports:
+    - 80:80/tcp
+    - 80:80/udp
+    - 443:443/tcp
+    - 443:443/udp
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN}
+      DOMAIN: ${DOMAIN}
+      DOMAIN_ALIAS: ${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}
+      HOME_NETWORK_PREFIX: ${HOME_NETWORK_PREFIX}
+      X_DENNIS_TOKEN: ${X_DENNIS_TOKEN}
+      HOMELAB_TRAEFIK_SECURITY_HEADERS_THREADLENS_CONTENTSECURITYPOLICY_1: ${HOMELAB_TRAEFIK_SECURITY_HEADERS_THREADLENS_CONTENTSECURITYPOLICY_1:?Set
+        HOMELAB_TRAEFIK_SECURITY_HEADERS_THREADLENS_CONTENTSECURITYPOLICY_1 in the private
+        project env file}
+      HOMELAB_TRAEFIK_LOCAL_4_1: ${HOMELAB_TRAEFIK_LOCAL_4_1:?Set HOMELAB_TRAEFIK_LOCAL_4_1
+        in the private project env file}
+      HOMELAB_TRAEFIK_LOCAL_1_1: ${HOMELAB_TRAEFIK_LOCAL_1_1:?Set HOMELAB_TRAEFIK_LOCAL_1_1
+        in the private project env file}
+      HOMELAB_TRAEFIK_LOCAL_3_1: ${HOMELAB_TRAEFIK_LOCAL_3_1:?Set HOMELAB_TRAEFIK_LOCAL_3_1
+        in the private project env file}
+      HOMELAB_TRAEFIK_LOCAL_0_1: ${HOMELAB_TRAEFIK_LOCAL_0_1:?Set HOMELAB_TRAEFIK_LOCAL_0_1
+        in the private project env file}
+      HOMELAB_TRAEFIK_LOCAL_5_1: ${HOMELAB_TRAEFIK_LOCAL_5_1:?Set HOMELAB_TRAEFIK_LOCAL_5_1
+        in the private project env file}
+      HOMELAB_TRAEFIK_LOCAL_2_1: ${HOMELAB_TRAEFIK_LOCAL_2_1:?Set HOMELAB_TRAEFIK_LOCAL_2_1
+        in the private project env file}
+    volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ${HOMELAB_TRAEFIK_STATIC_FILE:?required}
+      target: /etc/traefik/traefik.yaml
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: /mnt/nas/docker/homelab-data/services/traefik/certs
+      target: /var/traefik/certs
+      read_only: false
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ${HOMELAB_TRAEFIK_DYNAMIC_DIR:?required}
+      target: /etc/traefik/conf.d
+      read_only: true
+      bind:
+        create_host_path: false
+    dns:
+    - 1.1.1.1
+    - 1.0.0.1
+    networks:
+      underground:
+        ipv4_address: "${HOMELAB_NETWORK_TRAEFIK_IPV4_ADDRESS_1:?Set HOMELAB_NETWORK_TRAEFIK_IPV4_ADDRESS_1 in the private project env file}"
+      macvlan_100:
+        ipv4_address: ${HOME_NETWORK_PREFIX}.254
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 5
+  ntp:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    container_name: ntp
+    image: sha256:12ad8f8b017abbade8ba66f78bfc95deccb485b1df40f4b72399d584eeab8ba8
+    restart: always
+    networks:
+      pihole:
+        ipv4_address: "${HOMELAB_NETWORK_NTP_IPV4_ADDRESS_1:?Set HOMELAB_NETWORK_NTP_IPV4_ADDRESS_1 in the private project env file}"
+    pull_policy: never
+  pihole:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    container_name: pihole1
+    hostname: pihole1
+    image: sha256:51cd8312db79504ae8ee0c3131a4877afb8bcc384d79c73f005caec2f4136908
+    labels:
+      traefik.enable: true
+      traefik.http.routers.pihole1.tls: true
+      traefik.http.routers.pihole1.tls.certresolver: cloudflare
+      traefik.http.routers.pihole1.entrypoints: https
+      traefik.http.routers.pihole1.rule: (Host(`pihole1.${DOMAIN}`) || Host(`pihole1.${DOMAIN_ALIAS:?DOMAIN_ALIAS is required}`))
+      traefik.http.routers.pihole1.middlewares: chain-lan-forwardauth-unsafe@file
+      traefik.http.services.pihole1.loadbalancer.server.port: 80
+      autoheal: true
+    restart: always
+    cap_add:
+    - CHOWN
+    - NET_BIND_SERVICE
+    - NET_RAW
+    - SYS_NICE
+    - SYS_TIME
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+    - type: bind
+      source: "/var/lib/homelab-data/services/pihole/data"
+      target: /etc/pihole
+      read_only: false
+      bind:
+        create_host_path: false
+    - type: volume
+      source: pihole-ftl-db
+      target: /ftl-db
+      read_only: false
+    environment:
+      TZ: ${TZ}
+      WEB_PORT: 80
+      FTLCONF_webserver_api_password: ${MIGRATION_FTLCONF_WEBSERVER_API_PASSWORD?supply existing private value}
+      FTLCONF_files_database: /ftl-db/pihole-FTL.db
+      FTLCONF_database_maxDBdays: 14
+      DNSMASQ_USER: root
+      DNSMASQ_LISTENING: all
+      PIHOLE_UID: 1026
+      PIHOLE_GID: 100
+    ports:
+    - target: 53
+      published: 53
+      protocol: tcp
+      mode: host
+    - target: 53
+      published: 53
+      protocol: udp
+      mode: host
+    dns:
+    - 1.1.1.1
+    - 1.0.0.1
+    networks:
+      underground:
+        ipv4_address: "${HOMELAB_NETWORK_PIHOLE_IPV4_ADDRESS_1:?Set HOMELAB_NETWORK_PIHOLE_IPV4_ADDRESS_1 in the private project env file}"
+      pihole:
+        ipv4_address: "${HOMELAB_NETWORK_PIHOLE_IPV4_ADDRESS_2:?Set HOMELAB_NETWORK_PIHOLE_IPV4_ADDRESS_2 in the private project env file}"
+    depends_on:
+      unbound:
+        condition: service_healthy
+    pull_policy: never
+  autoheal:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:e32bff91e9bf79b4bb35ce0273472c5e142f12a9e4441958bd628fe35ac53538
+    container_name: autoheal
+    restart: always
+    network_mode: none
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: 30
+      AUTOHEAL_START_PERIOD: 60
+    volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+      read_only: false
+      bind:
+        create_host_path: false
+    pull_policy: never
+  nebula-sync:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    restart: unless-stopped
+    image: sha256:912b7d8f8e72deb1b4c254b31db81040ef34b364cb6ec3b53bb1921930c59685
+    environment:
+      PRIMARY: ${MIGRATION_PRIMARY:?supply existing private value}
+      REPLICAS: ${MIGRATION_REPLICAS:?supply existing private value}
+      FULL_SYNC: "false"
+      SYNC_CONFIG_NTP_EXCLUDE: "sync.server"
+      SYNC_CONFIG_DNS: "true"
+      SYNC_CONFIG_DHCP: "true"
+      SYNC_CONFIG_NTP: "true"
+      SYNC_CONFIG_RESOLVER: "true"
+      SYNC_CONFIG_DATABASE: "true"
+      SYNC_CONFIG_MISC: "true"
+      SYNC_CONFIG_DEBUG: "true"
+      SYNC_GRAVITY_DHCP_LEASES: "true"
+      SYNC_GRAVITY_GROUP: "true"
+      SYNC_GRAVITY_AD_LIST: "true"
+      SYNC_GRAVITY_AD_LIST_BY_GROUP: "true"
+      SYNC_GRAVITY_DOMAIN_LIST: "true"
+      SYNC_GRAVITY_DOMAIN_LIST_BY_GROUP: "true"
+      SYNC_GRAVITY_CLIENT: "true"
+      SYNC_GRAVITY_CLIENT_BY_GROUP: "true"
+      CRON: 1/5 * * * *
+    networks:
+      pihole:
+        ipv4_address: "${HOMELAB_NETWORK_NEBULA_SYNC_IPV4_ADDRESS_1:?Set HOMELAB_NETWORK_NEBULA_SYNC_IPV4_ADDRESS_1 in the private project env file}"
+    depends_on:
+      pihole:
+        condition: service_healthy
+    pull_policy: never
+  unbound:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    image: sha256:a7778ebb14b25328fc6de5b58ddf5dfe3e0891afec8fd86744995fd8dbcd5b4e
+    container_name: unbound1
+    volumes:
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/config
+        target: /opt/unbound/etc/unbound
+        read_only: false
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/data/unbound_server.key
+        target: /opt/unbound/etc/unbound/unbound_server.key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/data/unbound_control.key
+        target: /opt/unbound/etc/unbound/unbound_control.key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/data/unbound_server.pem
+        target: /opt/unbound/etc/unbound/unbound_server.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/data/unbound_control.pem
+        target: /opt/unbound/etc/unbound/unbound_control.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/data/dev
+        target: /opt/unbound/etc/unbound/dev
+        read_only: false
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/homelab-data/services/unbound/data/var
+        target: /opt/unbound/etc/unbound/var
+        read_only: false
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HOMELAB_UNBOUND_LOCAL_RECORDS_FILE:?Set HOMELAB_UNBOUND_LOCAL_RECORDS_FILE
+          in the private project env file}
+        target: /opt/unbound/etc/unbound/deployment.private.conf
+        read_only: true
+        bind:
+          create_host_path: false
+    restart: always
+    environment:
+      TZ: ${TZ}
+    networks:
+      pihole:
+        ipv4_address: "${HOMELAB_NETWORK_UNBOUND_IPV4_ADDRESS_1:?Set HOMELAB_NETWORK_UNBOUND_IPV4_ADDRESS_1 in the private project env file}"
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - drill @127.0.0.1 cloudflare.com || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+    pull_policy: never
+networks:
+  underground:
+    name: underground
+    driver: overlay
+    ipam:
+      driver: default
+      config:
+      - subnet: "${HOMELAB_NETWORK_UNDERGROUND_SUBNET_1:?Set HOMELAB_NETWORK_UNDERGROUND_SUBNET_1 in the private project env file}/24"
+        ip_range: "${HOMELAB_NETWORK_UNDERGROUND_IP_RANGE_1:?Set HOMELAB_NETWORK_UNDERGROUND_IP_RANGE_1 in the private project env file}/25"
+        gateway: "${HOMELAB_NETWORK_UNDERGROUND_GATEWAY_1:?Set HOMELAB_NETWORK_UNDERGROUND_GATEWAY_1 in the private project env file}"
+    attachable: true
+  macvlan_100:
+    name: macvlan_100
+    driver: macvlan
+    driver_opts:
+      parent: ens1.100
+    ipam:
+      config:
+      - subnet: ${HOME_NETWORK_PREFIX}.0/24
+        ip_range: ${HOME_NETWORK_PREFIX}.240/28
+        gateway: ${HOME_NETWORK_PREFIX}.1
+        aux_addresses:
+          nas: ${HOME_NETWORK_PREFIX}.240
+  pihole:
+    name: internal_pihole
+    driver: overlay
+    attachable: true
+    ipam:
+      config:
+      - subnet: "${HOMELAB_NETWORK_PIHOLE_SUBNET_1:?Set HOMELAB_NETWORK_PIHOLE_SUBNET_1 in the private project env file}/24"
+        ip_range: "${HOMELAB_NETWORK_PIHOLE_IP_RANGE_1:?Set HOMELAB_NETWORK_PIHOLE_IP_RANGE_1 in the private project env file}/25"
+name: network
